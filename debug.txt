@@ -1,0 +1,94 @@
+环境win10 64位
+python版本3-10（这个版本好像兼容有点问题，换我的另一个3-7就没那么多报错了）
+
+错误1：
+
+先是常规使用pip installer打包一下，打包出来的exe是不能正常运行的，
+然后留下autologin.spec文件与dist文件夹里的exe文件，删除打包多出来的_pycache_，build，dist文件夹，将exe文件剪切到其余文件夹，方便后续看报错内容。
+见如下网址
+
+https://blog.csdn.net/weixin_44043817/article/details/124947795?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522166515574316800180690896%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=166515574316800180690896&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduend~default-1-124947795-null-null.142^v51^new_blog_pos_by_title,201^v3^control_2&utm_term=ddddocr%E6%8A%A5%E9%94%99&spm=1018.2226.3001.4187
+
+autologin.spec配置文件中,需要在data里添加报错内容中缺失的文件，
+可以在打包出来的exe文件目录输入cmd，在cmd窗口启动exe文件，就不会闪退，然后查看报错内容。
+
+cmd中缺失文件报错示例如下
+
+C:\Users\zong\Desktop\njtech-home_autologin_debug>autologin.exe
+欢迎使用ddddocr，本项目专注带动行业内卷，个人博客:wenanzhe.com
+训练数据支持来源于:http://146.56.204.113:19199/preview
+爬虫框架feapder可快速一键接入，快速开启爬虫之旅：https://github.com/Boris-code/feapder
+谷歌reCaptcha验证码 / hCaptcha验证码 / funCaptcha验证码商业级识别接口：https://yescaptcha.com/i/NSwk7i
+Traceback (most recent call last):
+  File "autologin.py", line 46, in <module>
+  File "autologin.py", line 37, in get_captcha
+  File "ddddocr\__init__.py", line 1459, in __init__
+  File "onnxruntime\capi\onnxruntime_inference_collection.py", line 347, in __init__
+  File "onnxruntime\capi\onnxruntime_inference_collection.py", line 384, in _create_inference_session
+onnxruntime.capi.onnxruntime_pybind11_state.NoSuchFile: [ONNXRuntimeError] : 3 : NO_SUCHFILE : Load model from C:\Users\zong\AppData\Local\Temp\_MEI91082\ddddocr\common_old.onnx failed:Load model C:\Users\zong\AppData\Local\Temp\_MEI91082\ddddocr\common_old.onnx failed. File doesn't exist
+[11832] Failed to execute script 'autologin' due to unhandled exception!
+
+可以看见，NO_SUCHFILE显示缺失了common_old.onnx和onnxruntime_pybind11_state，将缺失的文件在你的环境目录里找到，按如下示例添加到autologin.spec文件的data当中。
+
+datas=[('C:/Users/zong/AppData/Local/Programs/Python/Python310/Lib/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll','onnxruntime/capi'),('C:/Users/zong/AppData/Local/Programs/Python/Python310/Lib/site-packages/ddddocr/common_old.onnx','ddddocr'),('C:/Users/zong/AppData/Local/Programs/Python/Python310/Lib/site-packages/ddddocr/common.onnx','ddddocr')],
+
+注意输入法切换为英文。
+注意文件目录改成你的python环境里的site-packages文件夹，使用绝对路径。
+环境不同，可能缺失的文件不同，具体按报错内容来添加，在上面那个链接里那两个文件添加后我打包出来的文件还是报错，添加报错提示的文件即可正常运行。
+
+
+
+错误2：
+cv2模块的导入失败，
+报错如下：
+
+C:\Users\zong\Desktop\njtech-home_autologin_debug>autologin-1.exe
+['C:\\Users\\zong\\AppData\\Local\\Temp\\_MEI144042\\base_library.zip', 'C:\\Users\\zong\\AppData\\Local\\Temp\\_MEI144042\\cv2', 'C:\\Users\\zong\\AppData\\Local\\Temp\\_MEI144042\\lib-dynload', 'C:\\Users\\zong\\AppData\\Local\\Temp\\_MEI144042']
+Traceback (most recent call last):
+  File "autologin.py", line 4, in <module>
+  File "PyInstaller\loader\pyimod03_importers.py", line 495, in exec_module
+  File "ddddocr\__init__.py", line 13, in <module>
+    except ImportError:
+  File "PyInstaller\loader\pyimod03_importers.py", line 495, in exec_module
+  File "cv2\__init__.py", line 181, in <module>
+    bootstrap()
+  File "cv2\__init__.py", line 153, in bootstrap
+    native_module = importlib.import_module("cv2")
+  File "importlib\__init__.py", line 126, in import_module
+    if sys.path[0] == BASE_DIR or os.path.realpath(sys.path[0]) == BASE_DIR:
+  File "PyInstaller\loader\pyimod03_importers.py", line 495, in exec_module
+  File "cv2\__init__.py", line 181, in <module>
+    bootstrap()
+  File "cv2\__init__.py", line 76, in bootstrap
+    raise ImportError('ERROR: recursion is detected during loading of "cv2" binary extensions. Check OpenCV installation.')
+ImportError: ERROR: recursion is detected during loading of "cv2" binary extensions. Check OpenCV installation.
+[8100] Failed to execute script 'autologin' due to unhandled exception!
+
+
+好像是因为我的环境里numpy库的兼容性，无法兼容opencv。
+cv2按照百度的方式重新安装对应版本opencv库一直无法正常解决，直到在github上找到解决办法
+cmd中输入
+py -m pip install --force-reinstall --no-cache opencv-python==4.5.5.64
+命令即可解决cv2导入异常的问题
+
+cmd中pip记录：
+C:\Users\zong>py -m pip install --force-reinstall --no-cache opencv-python==4.5.5.64
+Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple
+Collecting opencv-python==4.5.5.64
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/48/c3/798bd7b8f78430f82ec0660b753106717e4e4bb8032ce56f77d8577cb24b/opencv_python-4.5.5.64-cp36-abi3-win_amd64.whl (35.4 MB)
+     ---------------------------------------- 35.4/35.4 MB 3.8 MB/s eta 0:00:00
+Collecting numpy>=1.21.2
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/51/b6/861f5e9d59c1bb6c05467f5ddcba965cb2c4b1fd62f6bf7b4c4632492625/numpy-1.23.3-cp310-cp310-win_amd64.whl (14.6 MB)
+     ---------------------------------------- 14.6/14.6 MB 2.8 MB/s eta 0:00:00
+Installing collected packages: numpy, opencv-python
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.22.1
+    Uninstalling numpy-1.22.1:
+      Successfully uninstalled numpy-1.22.1
+Successfully installed numpy-1.23.3 opencv-python-4.5.5.64
+
+可以见到是opencv需要调用的numpy库有具体兼容性版本要求，过高或过低都无法兼容opencv。
+具体兼容性
+链接如下
+https://github.com/moom825/Discord-RAT/issues/40
+
